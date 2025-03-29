@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import CreateScriptSection from "./Editor/CreateScriptSection";
-import TimelineSection from "./Editor/TimelineSection";
-import BrainstormingSection from "./Editor/BrainstormingSection";
+import CreateScriptSection from "./editor/CreateScriptSection";
+import TimelineSection from "./editor/timeline/TimelineSection";
+import BrainstormingSection from "./editor/BrainstormingSection";
 
 export default function Editor() {
   return (
