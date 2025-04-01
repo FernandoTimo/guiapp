@@ -61,7 +61,6 @@ const SketchCanvas: React.FC = () => {
       const { offsetWidth, offsetHeight } = canvas;
       if (!offsetWidth || !offsetHeight) return;
 
-      const dataURL = canvas.toDataURL();
       canvas.width = offsetWidth * dpr;
       canvas.height = offsetHeight * dpr;
 

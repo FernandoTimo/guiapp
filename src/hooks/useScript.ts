@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
-interface Script {
+export type ScriptBody = { [key: string]: string }; // ejemplo: { introducción: "texto" }
+export type Script = {
   id: string;
   title: string;
-  body: any; // Asegúrate de tiparlo correctamente según tu DB
+  body: ScriptBody[]; // lista de bloques de guión
   timeline_id: string;
-  notas: any[];
-}
+  notas: string | null; // imagen base64
+};
 
 export function useScript() {
   const searchParams = useSearchParams();
@@ -51,10 +52,6 @@ export function useScript() {
     fetchScript();
   }, [scriptId]);
 
-  /**
-   * Actualiza el guion en Supabase
-   * @param updatedData - Datos a actualizar (ej: { title: "Nuevo título" })
-   */
   async function updateScript(updatedData: Partial<Script>) {
     if (!scriptId) return;
 
@@ -68,7 +65,6 @@ export function useScript() {
       return;
     }
 
-    // Actualizar el estado local
     setScript((prev) => (prev ? { ...prev, ...updatedData } : prev));
   }
 

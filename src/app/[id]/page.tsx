@@ -7,6 +7,7 @@ import Sidebar from "@/components/sidebar/SideBar";
 import React from "react";
 
 export default function Editor({ params }: { params: { id: string } }) {
+  console.log(params);
   return (
     <div className="flex min-h-screen">
       <Sidebar />
