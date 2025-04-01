@@ -26,9 +26,9 @@ export default function Editor() {
     <main className="flex-1 relative p-4">
       {scriptId ? (
         <>
-          <ScriptSection scriptId={scriptId} />
-          <TimelineSection scriptId={scriptId} />
-          <NotesSection scriptId={scriptId} />
+          <ScriptSection />
+          <TimelineSection />
+          <NotesSection />
         </>
       ) : (
         <div className="flex flex-col items-center justify-center h-full">
