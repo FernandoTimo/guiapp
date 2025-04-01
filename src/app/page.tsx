@@ -1,11 +1,7 @@
-import dynamic from "next/dynamic";
+import Editor from "@/components/editor/Editor";
 import Sidebar from "@/components/sidebar/SideBar";
 import { Suspense } from "react";
-
-// ⬇️ Cargar Editor dinámicamente como client component
-const Editor = dynamic(() => import("@/components/editor/Editor"), {
-  ssr: false,
-});
+// Carga dinámica de Editor como componente cliente
 
 export default function Home() {
   return (
