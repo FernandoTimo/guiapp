@@ -5,18 +5,7 @@ import TimelineSection from "@/components/editor/timeline/TimelineSection";
 import Sidebar from "@/components/sidebar/SideBar";
 import React from "react";
 
-// ✅ define tú mismo el tipo de params
-type Props = {
-  params: {
-    id: string;
-  };
-};
-
-// ❌ NO pongas "use client" aquí
-export default function EditorPage({ params }: Props) {
-  // Este log solo se ejecuta en el servidor
-  console.log("ID recibido por la ruta:", params.id);
-
+export default function EditorPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
