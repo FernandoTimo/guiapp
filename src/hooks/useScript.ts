@@ -9,7 +9,7 @@ interface Script {
   title: string;
   body: any; // Asegúrate de tiparlo correctamente según tu DB
   timeline_id: string;
-  notes: any[];
+  notas: any[];
 }
 
 export function useScript() {

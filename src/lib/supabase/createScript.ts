@@ -36,7 +36,7 @@ export async function createNewScript(): Promise<string | null> {
           title: "Nuevo Guión",
           body, // Se guarda como JSONB
           timeline_id: timelineId,
-          notes: [],
+          notas: [],
           created_at: new Date().toISOString(),
         },
       ])
