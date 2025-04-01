@@ -1,20 +1,31 @@
-"use client";
+import { useState, useEffect } from "react";
+import { useScript } from "@/hooks/useScript";
 
-import React from "react";
+export default function ScriptSection() {
+  const { script, updateScript } = useScript();
+  const [title, setTitle] = useState(script?.title || "");
 
-export default function CreateScriptSection() {
+  useEffect(() => {
+    setTitle(script?.title || ""); // Sincroniza el estado cuando cambia el script
+  }, [script?.title]); // ✅ Dependencia corregida
+
+  useEffect(() => {
+    if (!updateScript) return;
+
+    const handler = setTimeout(() => {
+      if (title && script?.title !== title) {
+        updateScript({ title });
+      }
+    }, 500); // Espera 500ms después de la última tecla
+
+    return () => clearTimeout(handler); // Cancela el timer si se sigue escribiendo
+  }, [title, script?.title, updateScript]); // ✅ Dependencias corregidas
+
   return (
-    <section className="mb-4 w-[65vw]">
-      <input
-        type="text"
-        placeholder="Título del guión"
-        className="w-full border rounded p-2 mb-4"
-      />
-      <textarea
-        placeholder="Escribe tu guión aquí..."
-        className="w-full border rounded p-2"
-        rows={6}
-      ></textarea>
-    </section>
+    <input
+      className="w-full bg-transparent text-xl font-bold border-b border-neutral-600 focus:outline-none"
+      value={title}
+      onChange={(e) => setTitle(e.target.value)}
+    />
   );
 }

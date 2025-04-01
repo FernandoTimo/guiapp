@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { useTimelines, Timeline } from "@/hooks/useTimelines";
 import { TimelineList } from "./TimelineList";
 import { TimelineCreationForm } from "./TimelineCreationForm";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase/client";
 
 export default function TimelineSection() {
   const [mounted, setMounted] = useState(false);
