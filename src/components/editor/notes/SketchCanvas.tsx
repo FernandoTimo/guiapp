@@ -3,7 +3,7 @@
 import { useSketchStore } from "@/hooks/useSketchStore";
 import { useScript } from "@/hooks/useScript";
 import { supabase } from "@/lib/supabase/client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const SketchCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -11,11 +11,18 @@ const SketchCanvas: React.FC = () => {
   const isDrawing = useRef(false);
   const lastImage = useRef<string | null>(null);
 
-  const { color: strokeColor, size: strokeWidth, tool } = useSketchStore();
+  const strokeColor = useSketchStore((state) => state.color);
+  const strokeWidth = useSketchStore((state) => state.size);
+  const tool = useSketchStore((state) => state.tool);
+  const setColor = useSketchStore((state) => state.setColor);
+  const setSize = useSketchStore((state) => state.setSize);
+
   const { script } = useScript();
   const scriptId = script?.id;
 
-  // Cargar lienzo guardado
+  const [showCursor, setShowCursor] = useState(true);
+
+  // 🖼️ Cargar la imagen guardada de notas
   useEffect(() => {
     const loadCanvasFromSupabase = async () => {
       if (!canvasRef.current || !scriptId) return;
@@ -47,11 +54,10 @@ const SketchCanvas: React.FC = () => {
     loadCanvasFromSupabase();
   }, [scriptId]);
 
-  // Inicializar tamaño del canvas
+  // 🎨 Ajustar tamaño del canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -63,7 +69,6 @@ const SketchCanvas: React.FC = () => {
 
       canvas.width = offsetWidth * dpr;
       canvas.height = offsetHeight * dpr;
-
       ctx.scale(dpr, dpr);
 
       if (lastImage.current) {
@@ -80,10 +85,13 @@ const SketchCanvas: React.FC = () => {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
+  // 🎯 Dibujar
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0 && e.button !== 2) return; // solo izquierdo o derecho
+
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx || e.button !== 0) return;
+    if (!canvas || !ctx) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -94,7 +102,7 @@ const SketchCanvas: React.FC = () => {
     ctx.lineWidth = strokeWidth;
     ctx.strokeStyle = strokeColor;
     ctx.globalCompositeOperation =
-      tool === "eraser" ? "destination-out" : "source-over";
+      e.button === 2 ? "destination-out" : "source-over";
 
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -155,8 +163,52 @@ const SketchCanvas: React.FC = () => {
     canvas?.releasePointerCapture(e.pointerId);
   };
 
+  // 🎡 Scroll para tamaño de herramienta
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+
+    const delta = e.deltaY > 0 ? -1 : 1;
+    const isRightClick = e.buttons === 2;
+
+    const factor = isRightClick ? 3 : 1;
+    const newSize = Math.min(50, Math.max(1, strokeWidth + delta * factor));
+    setSize(newSize);
+  };
+  useEffect(() => {
+    const storedColor = localStorage.getItem("sketch_color");
+    if (storedColor) setColor(storedColor);
+    const colorMap: Record<string, string> = {
+      Digit1: "#b8f2e6", // Blanco puro
+      Digit2: "#ffaa00", // Naranja neón
+      Digit3: "#aaf683", // Verde lima
+      Digit4: "#ef476f", // Rojo neón
+      Digit5: "#9400ff", // Violeta neón
+      Digit6: "#00bfff", // Azul eléctrico
+      Digit7: "#59cd90", // Fucsia
+      Digit8: "#fec3a6", // Amarillo neón
+      Digit9: "#000000", // Negro
+      Digit0: "#ffffff", // Neón cyan
+    };
+
+    const handleAltColorChange = (e: KeyboardEvent) => {
+      if (e.altKey && colorMap[e.code]) {
+        e.preventDefault();
+        setColor(colorMap[e.code]);
+      }
+    };
+
+    window.addEventListener("keydown", handleAltColorChange);
+    return () => {
+      window.removeEventListener("keydown", handleAltColorChange);
+    };
+  }, [setColor]);
+
   return (
-    <div className="relative w-full h-full">
+    <div
+      className="relative w-full h-full"
+      onMouseEnter={() => setShowCursor(true)}
+      onMouseLeave={() => setShowCursor(false)}
+    >
       <canvas
         ref={canvasRef}
         className="w-full h-full cursor-none bg-transparent touch-none"
@@ -166,21 +218,25 @@ const SketchCanvas: React.FC = () => {
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onWheel={handleWheel}
+        onContextMenu={(e) => e.preventDefault()}
       />
-      <div
-        ref={cursorRef}
-        className="pointer-events-none absolute rounded-full"
-        style={{
-          width: strokeWidth,
-          height: strokeWidth,
-          left: "-100px",
-          top: "-100px",
-          transform: "translate(-50%, -50%)",
-          backgroundColor: tool === "eraser" ? "transparent" : strokeColor,
-          border: tool === "eraser" ? "2px solid white" : "none",
-          mixBlendMode: "difference",
-        }}
-      />
+      {showCursor && (
+        <div
+          ref={cursorRef}
+          className="pointer-events-none absolute rounded-full"
+          style={{
+            width: strokeWidth,
+            height: strokeWidth,
+            left: "-100px",
+            top: "-100px",
+            transform: "translate(-50%, -50%)",
+            backgroundColor: tool === "eraser" ? "transparent" : strokeColor,
+            border: tool === "eraser" ? "2px solid #ddd" : "none",
+            mixBlendMode: "difference",
+          }}
+        />
+      )}
     </div>
   );
 };

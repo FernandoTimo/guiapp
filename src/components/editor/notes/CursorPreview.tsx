@@ -1,32 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useSketchStore } from "@/hooks/useSketchStore";
 
-interface CursorPreviewProps {
-  show: boolean;
-  size: number;
-  color: string;
-  isEraser: boolean;
-}
+export default function CursorPreview() {
+  const { tool, color, size } = useSketchStore();
+  const [pos, setPos] = useState({ x: -9999, y: -9999 });
+  const [visible, setVisible] = useState(false);
 
-export default function CursorPreview({
-  show,
-  size,
-  color,
-  isEraser,
-}: CursorPreviewProps) {
-  const [pos, setPos] = React.useState({ x: 0, y: 0 });
-
-  React.useEffect(() => {
+  useEffect(() => {
     const move = (e: MouseEvent) => {
       setPos({ x: e.clientX, y: e.clientY });
+      setVisible(true);
     };
 
+    const leave = () => setVisible(false);
+
     window.addEventListener("mousemove", move);
-    return () => window.removeEventListener("mousemove", move);
+    window.addEventListener("mouseout", leave);
+
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseout", leave);
+    };
   }, []);
 
-  if (!show) return null;
+  // 👇 Forzamos actualización incluso si no se mueve el mouse
+  useEffect(() => {
+    // trigger re-render al cambiar color o herramienta
+    setPos((pos) => ({ ...pos }));
+  }, [color, tool, size]);
+
+  if (!visible) return null;
 
   return (
     <div
@@ -37,8 +42,8 @@ export default function CursorPreview({
         transform: "translate(-50%, -50%)",
         width: size,
         height: size,
-        backgroundColor: isEraser ? "transparent" : color,
-        border: isEraser ? "2px solid white" : "none",
+        backgroundColor: tool === "eraser" ? "transparent" : color,
+        border: tool === "eraser" ? "2px solid white" : "none",
         borderRadius: "50%",
         pointerEvents: "none",
         zIndex: 9999,
