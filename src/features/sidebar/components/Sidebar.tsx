@@ -1,19 +1,21 @@
 "use client";
-import React from "react";
-import { useMediaQuery } from "@/hooks/useMediaQuery"; // Hook global para detectar "(max-width: 768px)"
+import React, { useRef } from "react";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import SidebarContent from "./SidebarContent";
 
-// Sidebar: Muestra el contenido completo en escritorio y, en móviles,
-// muestra un botón de toggle que despliega el sidebar con animaciones.
 export default function Sidebar() {
-  // Detecta si estamos en un dispositivo móvil.
   const isMobile = useMediaQuery("(max-width: 768px)");
-  // Estado que controla si el sidebar está abierto en móviles.
   const [isOpen, setIsOpen] = React.useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const handleClickOutside = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      setIsOpen(false);
+    }
+  };
 
   return (
     <>
-      {/* Botón de toggle en móvil: se muestra en la esquina inferior izquierda */}
       {isMobile && (
         <div className="fixed bottom-4 left-4 z-11">
           <button
@@ -24,9 +26,8 @@ export default function Sidebar() {
           </button>
         </div>
       )}
+
       <aside
-        // En móvil: el sidebar ocupa toda la pantalla y se desliza desde la izquierda.
-        // En escritorio: se muestra el sidebar completo con un ancho fijo.
         className={
           isMobile
             ? `fixed inset-0 z-10 flex flex-col transition-transform duration-300 ${
@@ -38,20 +39,22 @@ export default function Sidebar() {
         }
       >
         {isMobile && (
-          // Overlay para móviles: Fondo semitransparente con desenfoque que aparece al abrir el sidebar.
           <div
             className={`fixed inset-0 z-10 transition-opacity duration-200 ${
               isOpen ? "delay-[200ms] opacity-100" : "opacity-0"
             }`}
+            onClick={handleClickOutside}
           ></div>
         )}
+
         {isMobile ? (
-          // En móvil, el contenido se renderiza dentro de un contenedor con padding y scroll.
-          <div className="relative h-full w-[50%] p-4 overflow-y-auto bg-neutral-900">
+          <div
+            ref={panelRef}
+            className="relative h-full w-[50%] p-4 overflow-y-auto bg-neutral-900 pointer-events-auto z-20"
+          >
             <SidebarContent />
           </div>
         ) : (
-          // En escritorio, se muestra el contenido completo directamente.
           <SidebarContent />
         )}
       </aside>
