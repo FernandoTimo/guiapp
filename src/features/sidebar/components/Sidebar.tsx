@@ -1,147 +1,60 @@
 "use client";
-/**
- * @file Sidebar.tsx
- * @description Componente que muestra la barra lateral de la aplicación.
- *
- * Se encarga de:
- *  - Obtener la lista de scripts desde la DB.
- *  - Mostrar un botón para crear un nuevo guion.
- *  - Renderizar los SidebarItem agrupados por fecha.
- */
+import React from "react";
+import { useMediaQuery } from "@/hooks/useMediaQuery"; // Hook global para detectar "(max-width: 768px)"
+import SidebarContent from "./SidebarContent";
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useTimeline } from "@/features/timeline/hooks/useTimeline";
-import { supabase } from "@/lib/supabase/client";
-import SidebarItem from "./SidebarItem";
-
-interface Script {
-  id: string;
-  title: string;
-  created_at?: string;
-}
-
+// Sidebar: Muestra el contenido completo en escritorio y, en móviles,
+// muestra un botón de toggle que despliega el sidebar con animaciones.
 export default function Sidebar() {
-  const [scripts, setScripts] = useState<Script[]>([]);
-  const { latestTimelines } = useTimeline();
-  const router = useRouter();
-
-  useEffect(() => {
-    const fetchScripts = async () => {
-      const { data, error } = await supabase
-        .from("scripts")
-        .select("id, title, created_at")
-        .order("created_at", { ascending: false });
-
-      if (!error && data) setScripts(data);
-    };
-
-    fetchScripts();
-  }, []);
-
-  const handleCreateScript = async () => {
-    const latestTimeline = latestTimelines[0];
-    if (!latestTimeline) return;
-
-    const body = latestTimeline.structure.map((item: string) => ({
-      [item]: `Texto generado para ${item}`,
-    }));
-
-    const { data, error } = await supabase
-      .from("scripts")
-      .insert([
-        {
-          title: "Nuevo Guión",
-          body,
-          timeline_id: latestTimeline.id,
-          notas: [],
-        },
-      ])
-      .select("id, title, created_at")
-      .single();
-
-    if (!error && data) {
-      setScripts((prev) => [data, ...prev]);
-      router.replace(`/?id=${data.id}`);
-      window.history.replaceState(null, "", `/${data.id}`);
-    }
-  };
-
-  const handleDeleted = (id: string) => {
-    setScripts((prev) => prev.filter((s) => s.id !== id));
-  };
-
-  const handleRenamed = (id: string, newTitle: string) => {
-    setScripts((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, title: newTitle } : s))
-    );
-  };
-
-  const grouped = groupScriptsByDate(scripts);
+  // Detecta si estamos en un dispositivo móvil.
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  // Estado que controla si el sidebar está abierto en móviles.
+  const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <aside className="w-64 bg-[#1e1e1e] text-white p-4 overflow-y-auto">
-      <h3 className="text-sm font-semibold text-neutral-400 mb-2 uppercase">
-        Proyectos
-      </h3>
-
-      <Link
-        href="/"
-        className="mb-3 flex items-center gap-2 text-sm text-neutral-300 hover:bg-neutral-800 px-3 py-2 rounded-xl transition"
-      >
-        🏠 Inicio
-      </Link>
-
-      <button
-        onClick={handleCreateScript}
-        className="mb-6 flex items-center gap-2 text-sm text-neutral-300 hover:bg-neutral-800 px-3 py-2 rounded-xl transition"
-      >
-        ➕ Nuevo guión
-      </button>
-
-      {Object.entries(grouped).map(([section, items]) => (
-        <div key={section} className="mb-6">
-          <h4 className="text-xs font-semibold text-neutral-500 mb-2">
-            {section}
-          </h4>
-          <ul className="space-y-1">
-            {items.map((script) => (
-              <SidebarItem
-                key={script.id}
-                id={script.id}
-                title={script.title}
-                onDeleted={handleDeleted}
-                onRenamed={handleRenamed}
-              />
-            ))}
-          </ul>
+    <>
+      {/* Botón de toggle en móvil: se muestra en la esquina inferior izquierda */}
+      {isMobile && (
+        <div className="fixed bottom-4 left-4 z-11">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="fixed bottom-30 left-[0%] h-30 w-10 p-3 bg-neutral-900 rounded-r-3xl text-white shadow-lg transition-all duration-100 hover:bg-neutral-800"
+          >
+            {isOpen ? "<-" : "->"}
+          </button>
         </div>
-      ))}
-    </aside>
+      )}
+      <aside
+        // En móvil: el sidebar ocupa toda la pantalla y se desliza desde la izquierda.
+        // En escritorio: se muestra el sidebar completo con un ancho fijo.
+        className={
+          isMobile
+            ? `fixed inset-0 z-10 flex flex-col transition-transform duration-300 ${
+                isOpen
+                  ? "translate-x-0 delay-0"
+                  : "-translate-x-full delay-[325ms]"
+              }`
+            : "w-64 bg-[#1e1e1e] text-white p-4 overflow-y-auto"
+        }
+      >
+        {isMobile && (
+          // Overlay para móviles: Fondo semitransparente con desenfoque que aparece al abrir el sidebar.
+          <div
+            className={`fixed inset-0 z-10 transition-opacity duration-200 ${
+              isOpen ? "delay-[200ms] opacity-100" : "opacity-0"
+            }`}
+          ></div>
+        )}
+        {isMobile ? (
+          // En móvil, el contenido se renderiza dentro de un contenedor con padding y scroll.
+          <div className="relative h-full w-[50%] p-4 overflow-y-auto bg-neutral-900">
+            <SidebarContent />
+          </div>
+        ) : (
+          // En escritorio, se muestra el contenido completo directamente.
+          <SidebarContent />
+        )}
+      </aside>
+    </>
   );
-}
-
-function groupScriptsByDate(scripts: Script[]) {
-  const grouped: Record<string, Script[]> = {};
-  const today = new Date();
-
-  scripts.forEach((script) => {
-    const date = script.created_at?.split("T")[0];
-    if (!date) return;
-
-    const created = new Date(date);
-    const diff = Math.floor((+today - +created) / (1000 * 60 * 60 * 24));
-
-    let label = "Más antiguos";
-    if (diff === 0) label = "Hoy";
-    else if (diff <= 7) label = "7 días anteriores";
-    else if (diff <= 30) label = "30 días anteriores";
-    else label = created.toLocaleString("default", { month: "long" });
-
-    if (!grouped[label]) grouped[label] = [];
-    grouped[label].push(script);
-  });
-
-  return grouped;
 }
