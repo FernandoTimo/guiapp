@@ -4,8 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ScriptSection from "./script/ScriptSection";
 import TimelineSection from "./timeline/TimelineSection";
-import NotesSection from "./notes/NotesSection";
 import { createNewScript } from "@/lib/supabase/createScript";
+import SketchSection from "@/features/sketch/components/SketchSection";
 
 export default function Editor() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function Editor() {
         <>
           <ScriptSection />
           <TimelineSection />
-          <NotesSection />
+          <SketchSection />
         </>
       ) : (
         <div className="flex flex-col items-center justify-center h-full">

@@ -1,16 +1,52 @@
-// lib/supabase/saveNotes.ts
-import { Stroke } from "@/hooks/useSketchStore";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "./client";
 
-export async function saveNotes(scriptId: string, strokes: Stroke[]) {
-  const { error } = await supabase
+// updatedNotas se espera que sea un objeto con la(s) clave(s) a actualizar
+export async function saveNotes(
+  scriptId: string,
+  noteKey: string,
+  noteBase64: string
+) {
+  if (!scriptId) {
+    console.warn("No scriptId provided to saveNotes");
+    return;
+  }
+
+  // 1) Obtenemos la columna 'notas' existente
+  const { data, error: fetchError } = await supabase
     .from("scripts")
-    .update({ notas: strokes })
+    .select("notas")
+    .eq("id", scriptId) // O "uuid", si corresponde
+    .single();
+
+  if (fetchError) {
+    console.error("Error fetching 'notas' before update:", fetchError);
+    return;
+  }
+
+  let notasObject: Record<string, string> = {};
+  if (data?.notas) {
+    if (typeof data.notas === "string") {
+      try {
+        notasObject = JSON.parse(data.notas);
+      } catch (err) {
+        console.error("Error parseando 'notas' actual:", err);
+        notasObject = {};
+      }
+    } else {
+      notasObject = data.notas;
+    }
+  }
+
+  // 3) Actualizamos solo la clave noteKey
+  notasObject[noteKey] = noteBase64;
+
+  // 4) Guardamos en DB
+  const { error: updateError } = await supabase
+    .from("scripts")
+    .update({ notas: JSON.stringify(notasObject) })
     .eq("id", scriptId);
 
-  if (error) {
-    console.error("Error al guardar notas:", error.message);
-  } else {
-    console.log("Notas guardadas correctamente");
+  if (updateError) {
+    console.error("Error updating notas:", updateError);
   }
 }

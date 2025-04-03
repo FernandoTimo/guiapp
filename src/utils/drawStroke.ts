@@ -1,4 +1,4 @@
-import { Stroke } from "@/hooks/useSketchStore";
+import { Stroke } from "@/features/sketch/hooks/useSketchStore";
 
 export function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   if (!stroke.points || stroke.points.length < 2) return; // ✅ seguridad extra

@@ -1,131 +1,170 @@
-// src/components/TimelineSection.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useTimelines, Timeline } from "@/hooks/useTimelines";
+import React, { useEffect, useRef, useState } from "react";
+import { useTimeline } from "@/hooks/useTimeline";
+import { useTimelineStore } from "@/hooks/useTimelineStore";
 import { TimelineList } from "./TimelineList";
 import { TimelineCreationForm } from "./TimelineCreationForm";
 import { supabase } from "@/lib/supabase/client";
+import { useScript } from "@/hooks/useScript";
 
 export default function TimelineSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [selectedTimeline, setSelectedTimeline] = useState<Timeline | null>(
-    null
-  );
 
-  // Estados para el formulario de creación
   const [newTitle, setNewTitle] = useState("");
   const [newStructure, setNewStructure] = useState("");
   const [newUsages, setNewUsages] = useState("");
 
-  const { oldestTimeline, latestTimelines, loading, fetchTimelines } =
-    useTimelines();
+  const { script, updateScript } = useScript();
+  const { latestTimelines, fetchTimelines } = useTimeline();
+  const { selectedTimeline, setSelectedTimeline, selectedKey, setSelectedKey } =
+    useTimelineStore();
 
-  // Aseguramos que el componente se renderice solo en el cliente
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Inicialmente, usamos el timeline más antiguo como seleccionado
   useEffect(() => {
-    if (oldestTimeline && !selectedTimeline) {
-      setSelectedTimeline(oldestTimeline);
+    if (script?.timeline_id && latestTimelines.length > 0) {
+      const timeline = latestTimelines.find((t) => t.id === script.timeline_id);
+      if (timeline) {
+        setSelectedTimeline(timeline);
+        setSelectedKey(timeline.structure[0] || "");
+      }
     }
-  }, [oldestTimeline, selectedTimeline]);
+  }, [
+    script?.timeline_id,
+    latestTimelines,
+    setSelectedTimeline,
+    setSelectedKey,
+  ]);
 
-  // Función para guardar un nuevo timeline, con validación
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        isOpen &&
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
   const handleSaveNewTimeline = async () => {
     if (!newTitle.trim() || !newStructure.trim() || !newUsages.trim()) {
       alert("Por favor completa todos los campos");
       return;
     }
+
     const structureArray = newStructure
       .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item);
+      .map((s) => s.trim())
+      .filter(Boolean);
     const usagesArray = newUsages
       .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item);
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     const { data, error } = await supabase
       .from("timelines")
       .insert([
-        { title: newTitle, structure: structureArray, usages: usagesArray },
-      ]);
+        {
+          title: newTitle,
+          structure: structureArray,
+          usages: usagesArray,
+        },
+      ])
+      .select("*")
+      .single();
+
     if (error) {
-      console.error("Error al guardar el timeline:", error.message);
-    } else {
-      console.log("Timeline guardado:", data);
-      // Limpiar campos y cerrar el formulario
-      setNewTitle("");
-      setNewStructure("");
-      setNewUsages("");
-      setIsCreating(false);
-      // Refrescar los timelines
-      fetchTimelines();
+      console.error("Error al guardar timeline:", error.message);
+      return;
+    }
+
+    setNewTitle("");
+    setNewStructure("");
+    setNewUsages("");
+    setIsCreating(false);
+    fetchTimelines();
+
+    if (data?.id && updateScript) {
+      updateScript({ timeline_id: data.id });
     }
   };
 
   if (!mounted) return null;
 
   return (
-    <section className="flex fixed flex-row bottom-5 left-1/2 transform -translate-x-1/2 w-[50%] text-white items-end gap-2">
-      <div className="flex items-center flex-col flex-1 gap-5 max-h-[50vh]">
-        {loading ? (
-          <div className="p-4">Cargando...</div>
-        ) : (
-          <>
-            {/* Lista de los 4 últimos timelines */}
-            <TimelineList
-              timelines={latestTimelines}
-              isOpen={isOpen}
-              onSelect={(timeline) => setSelectedTimeline(timeline)}
-            />
-            {/* Sección principal para mostrar el timeline seleccionado o el formulario */}
-            {selectedTimeline && (
-              <div className="p-2 flex-1 w-full bg-neutral-900 rounded-3xl">
-                <div className="flex flex-col gap-2 w-full">
-                  {!isCreating ? (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedTimeline.structure.map((item, index) => (
-                        <span
-                          key={index}
-                          className="flex flex-1 justify-center items-center bg-neutral-950 text-neutral-700 uppercase rounded-2xl h-10"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <TimelineCreationForm
-                      newTitle={newTitle}
-                      newStructure={newStructure}
-                      newUsages={newUsages}
-                      setNewTitle={setNewTitle}
-                      setNewStructure={setNewStructure}
-                      setNewUsages={setNewUsages}
-                    />
-                  )}
+    <section
+      ref={containerRef}
+      className="flex fixed flex-row bottom-5 left-1/2 transform -translate-x-1/2 w-[50%] text-white items-end gap-2 pointer-events-none"
+    >
+      <div className="flex items-center flex-col flex-1 gap-5 max-h-[50vh] ">
+        <TimelineList
+          timelines={latestTimelines}
+          isOpen={isOpen}
+          onSelect={(timeline) => {
+            setSelectedTimeline(timeline);
+            setSelectedKey(timeline.structure[0] || "");
+            setIsOpen(false); // ✅ Se cierra automáticamente
+            if (script?.id) {
+              updateScript({ timeline_id: timeline.id });
+            }
+          }}
+        />
+
+        {selectedTimeline && (
+          <div className="p-2 flex-1 w-full bg-neutral-900 rounded-3xl pointer-events-auto">
+            <div className="flex flex-col gap-2 w-full">
+              {!isCreating ? (
+                <div className="flex flex-wrap gap-2">
+                  {selectedTimeline.structure.map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedKey(item)}
+                      className={`flex-1 text-xs rounded-2xl px-3 py-1 uppercase transition-all duration-150 font-bold ${
+                        selectedKey === item
+                          ? "bg-pink-600 text-white"
+                          : "bg-neutral-800 text-neutral-600 opacity-60"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
                 </div>
-              </div>
-            )}
-          </>
+              ) : (
+                <TimelineCreationForm
+                  newTitle={newTitle}
+                  newStructure={newStructure}
+                  newUsages={newUsages}
+                  setNewTitle={setNewTitle}
+                  setNewStructure={setNewStructure}
+                  setNewUsages={setNewUsages}
+                />
+              )}
+            </div>
+          </div>
         )}
       </div>
+
       <div className="flex h-10 w-60 mb-2 gap-2">
         {isCreating ? (
           <>
             <button
-              className="flex-1 border-2 border-green-600 rounded-2xl text-sm text-green-600"
+              className="flex-1 border-2 border-green-600 rounded-2xl text-sm text-green-600 pointer-events-auto"
               onClick={handleSaveNewTimeline}
             >
               Guardar
             </button>
             <button
-              className="flex-1 px-2 py-1 rounded-2xl text-sm border-2 border-red-900 text-red-500"
+              className="flex-1 border-2 border-red-800 rounded-2xl text-sm text-red-500 pointer-events-auto"
               onClick={() => setIsCreating(false)}
             >
               Cancelar
@@ -134,19 +173,19 @@ export default function TimelineSection() {
         ) : (
           <>
             <button
-              className="flex-1 border-2 border-amber-900 rounded-2xl text-sm text-amber-500"
-              onClick={() => setIsOpen(!isOpen)}
+              className="flex-1 border-2 border-amber-900 rounded-2xl text-sm text-amber-500 pointer-events-auto"
+              onClick={() => setIsOpen((prev) => !prev)}
             >
               {isOpen ? "Ocultar" : "Cambiar"}
             </button>
             <button
-              className="flex-1 border-2 border-blue-600 rounded-2xl text-sm text-blue-600"
+              className="flex-1 border-2 border-blue-600 rounded-2xl text-sm text-blue-600 pointer-events-auto"
               onClick={() => {
                 setIsCreating(true);
                 setIsOpen(false);
               }}
             >
-              Crear Nuevo
+              Crear nuevo
             </button>
           </>
         )}

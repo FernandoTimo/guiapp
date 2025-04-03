@@ -1,16 +1,23 @@
 "use client";
 
+/**
+ * useScript.ts
+ * Obtiene el script de la tabla 'scripts' basado en un 'id'
+ * que se extrae de la URL (searchParams o pathname).
+ * Devuelve { script, loading, error, updateScript }.
+ */
+
 import { useState, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
-export type ScriptBody = { [key: string]: string }; // ejemplo: { introducción: "texto" }
+export type ScriptBody = { [key: string]: string };
 export type Script = {
   id: string;
   title: string;
-  body: ScriptBody[]; // lista de bloques de guión
+  body: ScriptBody[];
   timeline_id: string;
-  notas: string | null; // imagen base64
+  notas: string | null; // JSON string con { [noteKey]: base64 }
 };
 
 export function useScript() {
@@ -45,7 +52,6 @@ export function useScript() {
       } else {
         setScript(data);
       }
-
       setLoading(false);
     }
 

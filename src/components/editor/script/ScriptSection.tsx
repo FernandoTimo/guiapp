@@ -2,32 +2,35 @@
 
 import { useState, useEffect } from "react";
 import { useScript } from "@/hooks/useScript";
+import ScriptBody from "./ScriptBody";
 
 export default function ScriptSection() {
   const { script, updateScript } = useScript();
   const [title, setTitle] = useState(script?.title || "");
 
   useEffect(() => {
-    setTitle(script?.title || ""); // Sincroniza el estado cuando cambia el script
-  }, [script?.title]); // ✅ Dependencia corregida
+    setTitle(script?.title || "");
+  }, [script?.title]);
 
   useEffect(() => {
-    if (!updateScript) return;
-
     const handler = setTimeout(() => {
       if (title && script?.title !== title) {
         updateScript({ title });
       }
-    }, 500); // Espera 500ms después de la última tecla
+    }, 500);
 
-    return () => clearTimeout(handler); // Cancela el timer si se sigue escribiendo
-  }, [title, script?.title, updateScript]); // ✅ Dependencias corregidas
+    return () => clearTimeout(handler);
+  }, [title, script?.title, updateScript]);
 
   return (
-    <input
-      className="w-full bg-transparent text-xl font-bold border-b border-neutral-600 focus:outline-none"
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-    />
+    <div className="w-full max-w-3xl mx-auto">
+      <input
+        className="w-full bg-transparent text-xl font-bold border-b border-neutral-600 focus:outline-none mb-4"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+
+      <ScriptBody />
+    </div>
   );
 }

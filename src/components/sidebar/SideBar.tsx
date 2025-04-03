@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTimelines } from "@/hooks/useTimelines";
+import { useTimeline } from "@/hooks/useTimeline";
 import { supabase } from "@/lib/supabase/client";
+import SidebarItem from "./SidebarItem";
 
 interface Script {
   id: string;
@@ -14,7 +15,7 @@ interface Script {
 
 export default function Sidebar() {
   const [scripts, setScripts] = useState<Script[]>([]);
-  const { latestTimelines } = useTimelines();
+  const { latestTimelines } = useTimeline();
   const router = useRouter();
 
   useEffect(() => {
@@ -58,6 +59,10 @@ export default function Sidebar() {
     }
   };
 
+  const handleDeleted = (id: string) => {
+    setScripts((prev) => prev.filter((s) => s.id !== id));
+  };
+
   const grouped = groupScriptsByDate(scripts);
 
   return (
@@ -65,6 +70,14 @@ export default function Sidebar() {
       <h3 className="text-sm font-semibold text-neutral-400 mb-2 uppercase">
         Proyectos
       </h3>
+
+      <Link
+        href="/"
+        className="mb-3 flex items-center gap-2 text-sm text-neutral-300 hover:bg-neutral-800 px-3 py-2 rounded-xl transition"
+      >
+        🏠 Inicio
+      </Link>
+
       <button
         onClick={handleCreateScript}
         className="mb-6 flex items-center gap-2 text-sm text-neutral-300 hover:bg-neutral-800 px-3 py-2 rounded-xl transition"
@@ -79,14 +92,21 @@ export default function Sidebar() {
           </h4>
           <ul className="space-y-1">
             {items.map((script) => (
-              <li key={script.id}>
-                <Link
-                  href={`/${script.id}`}
-                  className="block text-sm text-neutral-300 px-3 py-2 rounded-xl hover:bg-neutral-800 transition"
-                >
-                  {script.title}
-                </Link>
-              </li>
+              <SidebarItem
+                key={script.id}
+                id={script.id}
+                title={script.title}
+                onDeleted={(deletedId) =>
+                  setScripts((prev) => prev.filter((s) => s.id !== deletedId))
+                }
+                onRenamed={(renamedId, newTitle) =>
+                  setScripts((prev) =>
+                    prev.map((s) =>
+                      s.id === renamedId ? { ...s, title: newTitle } : s
+                    )
+                  )
+                }
+              />
             ))}
           </ul>
         </div>

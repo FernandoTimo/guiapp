@@ -3,7 +3,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Timeline } from "@/hooks/useTimelines";
+import { Timeline } from "@/hooks/useTimeline";
 
 interface TimelineListProps {
   timelines: Timeline[];
@@ -24,7 +24,7 @@ export function TimelineList({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="flex flex-col gap-2 w-[90%] bg-neutral-900 p-4 rounded-2xl"
+          className="flex flex-col gap-2 w-[90%] bg-neutral-900 p-4 rounded-2xl pointer-events-auto"
         >
           {timelines.map((timeline) => (
             <motion.div
@@ -32,7 +32,9 @@ export function TimelineList({
               className="p-4 border-2 border-neutral-800 rounded-2xl cursor-pointer"
               whileHover={{ backgroundColor: "#222" }}
               transition={{ duration: 0.3 }}
-              onClick={() => onSelect(timeline)}
+              onClick={() => {
+                onSelect(timeline);
+              }}
             >
               <div className="flex flex-wrap gap-2 w-full">
                 {timeline.structure.map((item, index) => (
