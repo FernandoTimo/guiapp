@@ -1,9 +1,8 @@
 "use client";
-
 /**
  * @file SketchToolbar.tsx
  * @description Barra de herramientas flotante para el lienzo de dibujo.
- *   - Actualmente brinda la acción de limpiar el lienzo.
+ *   - Brinda la acción de limpiar el lienzo.
  *   - Se integra con useSketchStore para manejar trazos.
  *
  * @remarks
@@ -25,8 +24,7 @@ export default function SketchToolbar() {
    */
   const handleClearCanvas = () => {
     clearStrokes();
-    // En el futuro, aquí se podría notificar al backend o
-    // sincronizar con supabase.
+    // En el futuro, aquí se podría notificar al backend o sincronizar con supabase.
   };
 
   return (

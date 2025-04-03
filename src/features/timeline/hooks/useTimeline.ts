@@ -23,12 +23,12 @@ export function useTimeline() {
   async function fetchTimelines() {
     setLoading(true);
     setError(null);
-
     try {
       const data = await fetchAllTimelines();
       setLatestTimelines(data);
-    } catch (err: any) {
-      setError(err.message || "Error fetching timelines");
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setError(errorMsg || "Error fetching timelines");
     } finally {
       setLoading(false);
     }
@@ -50,14 +50,14 @@ export function useTimeline() {
         setLatestTimelines((prev) => [newT, ...prev]);
       }
       return newT;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error creating timeline:", err);
       return null;
     }
   }
 
   /**
-   * Efecto inicial para cargar la lista al montar el hook
+   * Efecto inicial para cargar la lista al montar el hook.
    */
   useEffect(() => {
     fetchTimelines();
