@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useTimelineStore } from "@/hooks/useTimelineStore";
+import { useTimelineStore } from "@/features/timeline/hooks/useTimelineStore";
 import SketchCanvas from "./SketchCanvas";
 import SketchToolbar from "./SketchToolbar";
 

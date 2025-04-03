@@ -1,35 +1,44 @@
 "use client";
+/**
+ * @file TimelineSection.tsx
+ * @description Contenedor principal para la funcionalidad de Timeline:
+ *   - Muestra la lista de timelines (TimelineList).
+ *   - Permite crear uno nuevo (TimelineCreationForm).
+ *   - Muestra la estructura actual del timeline seleccionado.
+ *   - Integra con el store (useTimelineStore) y con useScript para vincular timeline_id al script.
+ */
 
 import React, { useEffect, useRef, useState } from "react";
-import { useTimeline } from "@/hooks/useTimeline";
-import { useTimelineStore } from "@/hooks/useTimelineStore";
+import { useScript } from "@/hooks/useScript"; // Ajusta la import si cambiaste su ubicación
+import { useTimelineStore } from "../hooks/useTimelineStore";
+import { useTimeline } from "../hooks/useTimeline";
 import { TimelineList } from "./TimelineList";
 import { TimelineCreationForm } from "./TimelineCreationForm";
-import { supabase } from "@/lib/supabase/client";
-import { useScript } from "@/hooks/useScript";
-import { useSketchPersistence } from "@/features/sketch/hooks/useSketchPersistence"; // <-- Importamos el hook de persistencia
 
 export default function TimelineSection() {
+  // Refs y estados locales
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Campos del formulario de creación
   const [newTitle, setNewTitle] = useState("");
   const [newStructure, setNewStructure] = useState("");
   const [newUsages, setNewUsages] = useState("");
 
+  // Hooks globales
   const { script, updateScript } = useScript();
-  const { latestTimelines, fetchTimelines } = useTimeline();
+  const { latestTimelines, createNewTimeline } = useTimeline();
   const { selectedTimeline, setSelectedTimeline, selectedKey, setSelectedKey } =
     useTimelineStore();
 
-  const { updateSketchNotesForTimeline } = useSketchPersistence(); // <-- Extraemos la función
-
+  // Efecto para indicar que el componente ya está montado
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Cuando cargue el script, sincroniza con su timeline_id
   useEffect(() => {
     if (script?.timeline_id && latestTimelines.length > 0) {
       const timeline = latestTimelines.find((t) => t.id === script.timeline_id);
@@ -45,6 +54,7 @@ export default function TimelineSection() {
     setSelectedKey,
   ]);
 
+  // Manejo de click fuera para cerrar el panel
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -59,6 +69,12 @@ export default function TimelineSection() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
+  /**
+   * handleSaveNewTimeline:
+   *   - Valida campos.
+   *   - Crea el nuevo timeline (con createNewTimeline).
+   *   - Actualiza el script con el nuevo timeline_id.
+   */
   const handleSaveNewTimeline = async () => {
     if (!newTitle.trim() || !newStructure.trim() || !newUsages.trim()) {
       alert("Por favor completa todos los campos");
@@ -74,35 +90,21 @@ export default function TimelineSection() {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const { data, error } = await supabase
-      .from("timelines")
-      .insert([
-        {
-          title: newTitle,
-          structure: structureArray,
-          usages: usagesArray,
-        },
-      ])
-      .select("*")
-      .single();
-
-    if (error) {
-      console.error("Error al guardar timeline:", error.message);
-      return;
+    const created = await createNewTimeline(
+      newTitle,
+      structureArray,
+      usagesArray
+    );
+    if (created && updateScript && script?.id) {
+      updateScript({ timeline_id: created.id });
+      // Podrías hacer algo adicional si necesitas
     }
 
+    // Limpia y cierra el formulario
     setNewTitle("");
     setNewStructure("");
     setNewUsages("");
     setIsCreating(false);
-    fetchTimelines();
-
-    if (data?.id && updateScript && script?.id) {
-      // Actualizamos el timeline_id del script
-      updateScript({ timeline_id: data.id });
-      // Actualizamos los Sketches (notas) con la nueva estructura
-      updateSketchNotesForTimeline(structureArray, script.id);
-    }
   };
 
   if (!mounted) return null;
@@ -112,18 +114,17 @@ export default function TimelineSection() {
       ref={containerRef}
       className="flex fixed flex-row bottom-5 left-1/2 transform -translate-x-1/2 w-[50%] text-white items-end gap-2 pointer-events-none"
     >
-      <div className="flex items-center flex-col flex-1 gap-5 max-h-[50vh] ">
+      {/* Bloque principal */}
+      <div className="flex items-center flex-col flex-1 gap-5 max-h-[50vh]">
         <TimelineList
           timelines={latestTimelines}
           isOpen={isOpen}
           onSelect={(timeline) => {
             setSelectedTimeline(timeline);
             setSelectedKey(timeline.structure[0] || "");
-            setIsOpen(false); // Se cierra automáticamente
+            setIsOpen(false); // Cierra la lista
             if (script?.id && updateScript) {
               updateScript({ timeline_id: timeline.id });
-              // Actualizamos los Sketches para reflejar la nueva estructura
-              updateSketchNotesForTimeline(timeline.structure, script.id);
             }
           }}
         />
@@ -132,6 +133,7 @@ export default function TimelineSection() {
           <div className="p-2 flex-1 w-full bg-neutral-900 rounded-3xl pointer-events-auto">
             <div className="flex flex-col gap-2 w-full">
               {!isCreating ? (
+                // Renderizamos la estructura del timeline seleccionado
                 <div className="flex flex-wrap gap-2">
                   {selectedTimeline.structure.map((item, index) => (
                     <button
@@ -148,6 +150,7 @@ export default function TimelineSection() {
                   ))}
                 </div>
               ) : (
+                // Formulario de creación
                 <TimelineCreationForm
                   newTitle={newTitle}
                   newStructure={newStructure}
@@ -162,6 +165,7 @@ export default function TimelineSection() {
         )}
       </div>
 
+      {/* Botones inferiores (cambiar/crear timeline) */}
       <div className="flex h-10 w-60 mb-2 gap-2">
         {isCreating ? (
           <>

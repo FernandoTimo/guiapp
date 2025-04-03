@@ -1,9 +1,17 @@
-// src/components/TimelineList.tsx
 "use client";
+/**
+ * @file TimelineList.tsx
+ * @description Muestra la lista de timelines disponibles y notifica cuando el usuario
+ *   selecciona uno.
+ *
+ * @remarks
+ *   - Usa AnimatePresence (framer-motion) para animar la aparición/desaparición.
+ *   - Recibe `timelines`, `isOpen` y un callback `onSelect`.
+ */
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Timeline } from "@/hooks/useTimeline";
+import { Timeline } from "../types/timelineTypes";
 
 interface TimelineListProps {
   timelines: Timeline[];
@@ -32,9 +40,7 @@ export function TimelineList({
               className="p-4 border-2 border-neutral-800 rounded-2xl cursor-pointer"
               whileHover={{ backgroundColor: "#222" }}
               transition={{ duration: 0.3 }}
-              onClick={() => {
-                onSelect(timeline);
-              }}
+              onClick={() => onSelect(timeline)}
             >
               <div className="flex flex-wrap gap-2 w-full">
                 {timeline.structure.map((item, index) => (

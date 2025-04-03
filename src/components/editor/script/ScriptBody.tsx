@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useScript } from "@/hooks/useScript";
-import { useTimelineStore } from "@/hooks/useTimelineStore";
+import { useTimelineStore } from "@/features/timeline/hooks/useTimelineStore";
 
 export default function ScriptBody() {
   const { script, updateScript } = useScript();

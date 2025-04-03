@@ -1,4 +1,9 @@
 "use client";
+/**
+ * @file TimelineCreationForm.tsx
+ * @description Formulario para crear un nuevo Timeline. Recibe los valores y setters
+ *   como props, y notifica al componente padre cuando el usuario envía la información.
+ */
 
 import React from "react";
 
@@ -6,9 +11,9 @@ interface TimelineCreationFormProps {
   newTitle: string;
   newStructure: string;
   newUsages: string;
-  setNewTitle: (value: string) => void;
-  setNewStructure: (value: string) => void;
-  setNewUsages: (value: string) => void;
+  setNewTitle: React.Dispatch<React.SetStateAction<string>>;
+  setNewStructure: React.Dispatch<React.SetStateAction<string>>;
+  setNewUsages: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function TimelineCreationForm({
@@ -20,27 +25,27 @@ export function TimelineCreationForm({
   setNewUsages,
 }: TimelineCreationFormProps) {
   return (
-    <div className="flex gap-2 h-10">
+    <div className="flex flex-col gap-2">
       <input
         type="text"
+        className="w-full p-2 rounded bg-neutral-800 text-white"
         placeholder="Título"
         value={newTitle}
         onChange={(e) => setNewTitle(e.target.value)}
-        className="border-2 border-neutral-700 px-2 rounded-2xl"
       />
       <input
         type="text"
-        placeholder="Estructura"
+        className="w-full p-2 rounded bg-neutral-800 text-white"
+        placeholder="Estructura (separada por comas)"
         value={newStructure}
         onChange={(e) => setNewStructure(e.target.value)}
-        className="border-2 border-neutral-700 px-2 rounded-2xl"
       />
       <input
         type="text"
-        placeholder="Usages"
+        className="w-full p-2 rounded bg-neutral-800 text-white"
+        placeholder="Usages (separados por comas)"
         value={newUsages}
         onChange={(e) => setNewUsages(e.target.value)}
-        className="border-2 border-neutral-700 px-2 rounded-2xl"
       />
     </div>
   );

@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useTimelineStore } from "@/hooks/useTimelineStore";
+import { useTimelineStore } from "@/features/timeline/hooks/useTimelineStore";
 
 export function useSketchCarousel() {
   // 1) Integración con timeline store

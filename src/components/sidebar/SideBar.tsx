@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTimeline } from "@/hooks/useTimeline";
+import { useTimeline } from "@/features/timeline/hooks/useTimeline";
 import { supabase } from "@/lib/supabase/client";
 import SidebarItem from "./SidebarItem";
 
