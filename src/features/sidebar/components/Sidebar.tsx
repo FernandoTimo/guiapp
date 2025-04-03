@@ -52,7 +52,7 @@ export default function Sidebar() {
             ref={panelRef}
             className="relative h-full w-[50%] p-4 overflow-y-auto bg-neutral-900 pointer-events-auto z-20"
           >
-            <SidebarContent />
+            <SidebarContent onAnyAction={() => setIsOpen(false)} />
           </div>
         ) : (
           <SidebarContent />

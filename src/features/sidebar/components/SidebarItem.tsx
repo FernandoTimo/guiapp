@@ -15,6 +15,7 @@ interface Props {
   title: string;
   onDeleted: (id: string) => void;
   onRenamed: (id: string, newTitle: string) => void;
+  onClick?: () => void; // nuevo
 }
 
 export default function SidebarItem({
@@ -22,6 +23,7 @@ export default function SidebarItem({
   title,
   onDeleted,
   onRenamed,
+  onClick,
 }: Props) {
   const {
     containerRef,
@@ -57,7 +59,10 @@ export default function SidebarItem({
         />
       ) : (
         <div
-          onClick={handleClick}
+          onClick={() => {
+            handleClick();
+            onClick?.();
+          }}
           onDoubleClick={handleDoubleClick}
           className="block text-sm text-neutral-300 px-3 py-2 rounded-xl hover:bg-neutral-800 transition cursor-pointer"
         >
