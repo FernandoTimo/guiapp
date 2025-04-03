@@ -1,4 +1,36 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
+import { useScript } from "@/features/script/hooks/useScript";
+import { useTimelineStore } from "@/features/timeline/hooks/useTimelineStore";
+
+/**
+ * Declaramos los tipos para SpeechRecognition y SpeechRecognitionEvent
+ * para que TypeScript reconozca estas APIs.
+ */
+declare global {
+  interface Window {
+    SpeechRecognition?: { new (): SpeechRecognition };
+    webkitSpeechRecognition?: { new (): SpeechRecognition };
+  }
+}
+
+export interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult:
+    | ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void)
+    | null;
+  onerror: ((this: SpeechRecognition, ev: Event) => void) | null;
+}
+
+export interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
 /**
  * @file useScriptBodyEditor.ts
  * @description Hook para gestionar la edición del scriptBody completo.
@@ -14,11 +46,6 @@
  *  - isListening, interimText: Estados del reconocimiento de voz.
  *  - selectedKey, setSelectedKey: La sección activa.
  */
-
-import { useEffect, useRef, useState } from "react";
-import { useScript } from "@/features/script/hooks/useScript";
-import { useTimelineStore } from "@/features/timeline/hooks/useTimelineStore";
-
 export function useScriptBodyEditor() {
   const { script, updateScript } = useScript();
   const { selectedKey, setSelectedKey } = useTimelineStore();
@@ -27,7 +54,7 @@ export function useScriptBodyEditor() {
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState("");
 
-  // Convertir el script.body (array) a objeto editable
+  // Transformar el script.body (array) a objeto editable
   useEffect(() => {
     if (!script?.body) return;
     const transformed = script.body.reduce((acc, part) => {
@@ -38,7 +65,7 @@ export function useScriptBodyEditor() {
     setLocalBody(transformed);
   }, [script?.body]);
 
-  // Auto-guardado: Cada 600ms se actualiza la DB con el contenido actual
+  // Guardado automático: Cada 600ms se actualiza la DB con el contenido actual
   useEffect(() => {
     if (!selectedKey || !script?.body || !updateScript) return;
     const handler = setTimeout(() => {
@@ -50,11 +77,12 @@ export function useScriptBodyEditor() {
 
   // Configurar reconocimiento de voz
   useEffect(() => {
-    const SpeechRecognition =
-      window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    // Obtenemos el constructor de SpeechRecognition de forma segura
+    const SpeechRecognitionConstructor =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionConstructor) return;
 
-    const recognition = new SpeechRecognition();
+    const recognition: SpeechRecognition = new SpeechRecognitionConstructor();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "es-PE";
@@ -82,7 +110,7 @@ export function useScriptBodyEditor() {
     recognitionRef.current = recognition;
   }, [selectedKey]);
 
-  // Eventos globales para manejar el inicio/fin del reconocimiento
+  // Manejo global de eventos para iniciar y detener el reconocimiento de voz.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.key === "Enter") {

@@ -7,7 +7,7 @@
  * Se ha refactorizado para delegar el menú contextual a un componente separado (ContextMenu).
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import ContextMenu from "./ContextMenu";
@@ -50,7 +50,7 @@ export default function SidebarItem({
     }
   };
 
-  const handleRename = async () => {
+  const handleRename = useCallback(async () => {
     const trimmed = inputValue.trim();
     if (!trimmed || trimmed === title) {
       setInputValue(title);
@@ -65,7 +65,7 @@ export default function SidebarItem({
       onRenamed(id, trimmed);
     }
     setEditing(false);
-  };
+  }, [id, inputValue, title, onRenamed]);
 
   const handleClick = () => {
     if (clickTimeout.current) return;
@@ -96,7 +96,7 @@ export default function SidebarItem({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [editing, inputValue]);
+  }, [editing, handleRename]);
 
   return (
     <div ref={containerRef} className="relative group">
