@@ -1,8 +1,15 @@
 "use client";
 
+import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function TemplatesPage() {
+/**
+ * TemplatesContent
+ *
+ * Este componente se encarga de leer los parámetros de búsqueda (por ejemplo, "removed")
+ * y renderizar el contenido correspondiente de la página de plantillas.
+ */
+function TemplatesContent() {
   const searchParams = useSearchParams();
   const removedId = searchParams.get("removed");
 
@@ -22,5 +29,19 @@ export default function TemplatesPage() {
         {/* Aquí podrías mostrar plantillas futuras */}
       </div>
     </div>
+  );
+}
+
+/**
+ * TemplatesPage
+ *
+ * Componente principal de la página de plantillas.
+ * Envuelve el contenido en un Suspense para que useSearchParams se ejecute correctamente.
+ */
+export default function TemplatesPage() {
+  return (
+    <Suspense fallback={<div>Cargando plantillas...</div>}>
+      <TemplatesContent />
+    </Suspense>
   );
 }
