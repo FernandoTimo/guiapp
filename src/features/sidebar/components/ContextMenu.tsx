@@ -3,14 +3,8 @@
  * @file ContextMenu.tsx
  * @description Componente para mostrar el menú contextual del SidebarItem.
  *
- * Muestra las opciones:
- *  - Compartir
- *  - Cambiar el nombre
- *  - Archivar
- *  - Eliminar
- *
- * Recibe callbacks para cada acción, lo que permite separar la lógica
- * de la UI y facilitar la escalabilidad.
+ * Renderiza las opciones: Compartir, Cambiar el nombre, Archivar y Eliminar.
+ * Recibe callbacks para cada acción, permitiendo separar la lógica de la UI.
  */
 
 import React from "react";

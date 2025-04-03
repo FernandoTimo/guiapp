@@ -1,33 +1,119 @@
 "use client";
 /**
- * @file SidebarItem.tsx
- * @description Componente presentacional para un ítem en el Sidebar.
+ * @file useSidebarItemLogic.ts
+ * @description Hook para encapsular la lógica de interacción de un SidebarItem.
  *
- * Se encarga únicamente de la UI, delegando la lógica al hook useSidebarItemLogic
- * y el menú contextual a ContextMenu.
+ * Se encarga de:
+ *  - Manejar el estado de edición y el valor del input.
+ *  - Diferenciar entre clic y doble clic para navegar o activar el modo edición.
+ *  - Gestionar la visibilidad del menú contextual.
+ *  - Ejecutar acciones de borrado y renombrado a través de supabase.
+ *
+ * Retorna los estados y funciones necesarias para que el componente de UI se centre solo en renderizar.
  */
 
-import React from "react";
-import ContextMenu from "./ContextMenu";
-import { useSidebarItemLogic } from "../hooks/useSidebarItemLogic";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
-interface Props {
+interface SidebarItemLogicProps {
   id: string;
   title: string;
   onDeleted: (id: string) => void;
   onRenamed: (id: string, newTitle: string) => void;
 }
 
-export default function SidebarItem({
+export function useSidebarItemLogic({
   id,
   title,
   onDeleted,
   onRenamed,
-}: Props) {
-  const {
+}: SidebarItemLogicProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [editing, setEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(title);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const clickTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Actualiza el inputValue cuando title cambia.
+  useEffect(() => {
+    setInputValue(title);
+  }, [title]);
+
+  // Función para eliminar el script.
+  const handleDelete = useCallback(async () => {
+    const { error } = await supabase.from("scripts").delete().eq("id", id);
+    if (!error) {
+      if (pathname === `/${id}`) {
+        router.push(`/templates?removed=${id}`);
+      }
+      onDeleted(id);
+    }
+  }, [id, pathname, router, onDeleted]);
+
+  // Función para renombrar el script.
+  const handleRename = useCallback(async () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed || trimmed === title) {
+      setInputValue(title);
+      setEditing(false);
+      return;
+    }
+    const { error } = await supabase
+      .from("scripts")
+      .update({ title: trimmed })
+      .eq("id", id);
+    if (!error) {
+      onRenamed(id, trimmed);
+    }
+    setEditing(false);
+  }, [id, inputValue, title, onRenamed]);
+
+  // Manejo de clic simple (navegación) y doble clic (activar edición).
+  const handleClick = useCallback(() => {
+    if (clickTimeout.current) return;
+    clickTimeout.current = setTimeout(() => {
+      if (!editing) router.push(`/${id}`);
+      clickTimeout.current = null;
+    }, 250);
+  }, [editing, id, router]);
+
+  const handleDoubleClick = useCallback(() => {
+    if (clickTimeout.current) {
+      clearTimeout(clickTimeout.current);
+      clickTimeout.current = null;
+    }
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, []);
+
+  // Cierra el menú contextual y, si se está editando, ejecuta handleRename al hacer clic fuera.
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        if (editing) {
+          handleRename();
+        }
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [editing, handleRename]);
+
+  return {
     containerRef,
     inputRef,
     editing,
+    setEditing, // Retornamos setEditing para poder activar edición desde la UI.
     inputValue,
     setInputValue,
     showMenu,
@@ -36,65 +122,5 @@ export default function SidebarItem({
     handleDoubleClick,
     handleDelete,
     handleRename,
-  } = useSidebarItemLogic({ id, title, onDeleted, onRenamed });
-
-  return (
-    <div ref={containerRef} className="relative group">
-      {editing ? (
-        <input
-          ref={inputRef}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onBlur={handleRename}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleRename();
-            }
-          }}
-          autoFocus
-          className="w-full text-sm px-3 py-2 rounded-xl bg-neutral-900 text-white border border-neutral-700"
-        />
-      ) : (
-        <div
-          onClick={handleClick}
-          onDoubleClick={handleDoubleClick}
-          className="block text-sm text-neutral-300 px-3 py-2 rounded-xl hover:bg-neutral-800 transition cursor-pointer"
-        >
-          {title}
-        </div>
-      )}
-
-      <button
-        className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition text-white"
-        onClick={() => setShowMenu((prev) => !prev)}
-      >
-        •••
-      </button>
-
-      {showMenu && (
-        <ContextMenu
-          onShare={() => {
-            console.log("Compartir", id);
-            setShowMenu(false);
-          }}
-          onRename={() => {
-            setShowMenu(false);
-            // Activa el modo edición
-            setInputValue(title);
-            // Llama a handleDoubleClick o activa edición directamente
-            handleDoubleClick();
-          }}
-          onArchive={() => {
-            console.log("Archivar", id);
-            setShowMenu(false);
-          }}
-          onDelete={() => {
-            handleDelete();
-            setShowMenu(false);
-          }}
-        />
-      )}
-    </div>
-  );
+  };
 }

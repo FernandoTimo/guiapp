@@ -1,15 +1,13 @@
 "use client";
 /**
  * @file SidebarItem.tsx
- * @description Componente para representar un ítem en el Sidebar.
+ * @description Componente presentacional para representar un ítem en el Sidebar.
  *
- * Permite ver, editar y manejar acciones del script.
- * Se ha refactorizado para delegar el menú contextual a un componente separado (ContextMenu).
+ * Se encarga de renderizar la UI (texto, input, menú contextual) y delega toda la lógica de interacción al hook useSidebarItemLogic.
  */
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import React from "react";
+import { useSidebarItemLogic } from "../hooks/useSidebarItemLogic";
 import ContextMenu from "./ContextMenu";
 
 interface Props {
@@ -25,78 +23,20 @@ export default function SidebarItem({
   onDeleted,
   onRenamed,
 }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const [editing, setEditing] = useState(false);
-  const [inputValue, setInputValue] = useState(title);
-  const [showMenu, setShowMenu] = useState(false);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const clickTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    setInputValue(title);
-  }, [title]);
-
-  const handleDelete = async () => {
-    const { error } = await supabase.from("scripts").delete().eq("id", id);
-    if (!error) {
-      if (pathname === `/${id}`) {
-        router.push(`/templates?removed=${id}`);
-      }
-      onDeleted(id);
-    }
-  };
-
-  const handleRename = useCallback(async () => {
-    const trimmed = inputValue.trim();
-    if (!trimmed || trimmed === title) {
-      setInputValue(title);
-      setEditing(false);
-      return;
-    }
-    const { error } = await supabase
-      .from("scripts")
-      .update({ title: trimmed })
-      .eq("id", id);
-    if (!error) {
-      onRenamed(id, trimmed);
-    }
-    setEditing(false);
-  }, [id, inputValue, title, onRenamed]);
-
-  const handleClick = () => {
-    if (clickTimeout.current) return;
-    clickTimeout.current = setTimeout(() => {
-      if (!editing) router.push(`/${id}`);
-      clickTimeout.current = null;
-    }, 250);
-  };
-
-  const handleDoubleClick = () => {
-    if (clickTimeout.current) {
-      clearTimeout(clickTimeout.current);
-      clickTimeout.current = null;
-    }
-    setEditing(true);
-    setTimeout(() => inputRef.current?.focus(), 0);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        if (editing) handleRename();
-        setShowMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [editing, handleRename]);
+  const {
+    containerRef,
+    inputRef,
+    editing,
+    setEditing,
+    inputValue,
+    setInputValue,
+    showMenu,
+    setShowMenu,
+    handleClick,
+    handleDoubleClick,
+    handleDelete,
+    handleRename,
+  } = useSidebarItemLogic({ id, title, onDeleted, onRenamed });
 
   return (
     <div ref={containerRef} className="relative group">
