@@ -9,7 +9,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { useScript } from "@/hooks/useScript"; // Ajusta la import si cambiaste su ubicación
+import { useScript } from "@/features/script/hooks/useScript"; // Ajusta la import si cambiaste su ubicación
 import { useTimelineStore } from "../hooks/useTimelineStore";
 import { useTimeline } from "../hooks/useTimeline";
 import { TimelineList } from "./TimelineList";

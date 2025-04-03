@@ -1,45 +1,48 @@
 "use client";
-
 /**
  * @file SketchCursorPreview.tsx
  * @description Muestra un cursor personalizado para el lienzo de dibujo.
- *   - Se alimenta del hook `useMousePosition` (posición global del mouse).
- *   - Lee color/tamaño/herramienta desde `useSketchStore`.
- *   - Requiere tener .cursor-none (o similar) aplicado al body o contenedor,
- *     si se desea ocultar el cursor nativo del sistema.
+ *
+ * Recibe la posición del mouse, la herramienta, color y tamaño del pincel a través de props.
+ * Se renderiza como un elemento absolute dentro del contenedor del lienzo.
  */
 
-import React, { useEffect } from "react";
-import { useMousePosition } from "../hooks/useMousePosition";
-import { useSketchStore } from "../hooks/useSketchStore";
+import React from "react";
 
-export default function SketchCursorPreview() {
-  const { pos, visible, setPos } = useMousePosition();
-  const { tool, color, size } = useSketchStore();
+interface MousePosition {
+  x: number;
+  y: number;
+}
 
-  /**
-   * Se fuerza un re-render cuando cambian las variables del pincel,
-   * actualizando levemente la posición 'pos' para que la UI responda.
-   */
-  useEffect(() => {
-    setPos((prev) => ({ ...prev }));
-  }, [tool, color, size, setPos]);
+interface SketchCursorPreviewProps {
+  mousePos: MousePosition;
+  tool: "pen" | "eraser";
+  color: string;
+  size: number;
+}
 
-  if (!visible) return null;
+export default function SketchCursorPreview({
+  mousePos,
+  tool,
+  color,
+  size,
+}: SketchCursorPreviewProps) {
+  // Si la posición sigue siendo la inicial, no renderizamos.
+  if (mousePos.x === -9999 && mousePos.y === -9999) return null;
 
   return (
     <div
-      className="pointer-events-none fixed"
+      className="pointer-events-none absolute"
       style={{
-        top: pos.y,
-        left: pos.x,
+        top: mousePos.y,
+        left: mousePos.x,
         transform: "translate(-50%, -50%)",
         width: size,
         height: size,
         borderRadius: "50%",
         backgroundColor: tool === "eraser" ? "transparent" : color,
         border: tool === "eraser" ? "2px solid white" : "none",
-        zIndex: 999999,
+        zIndex: 9999,
         mixBlendMode: "difference",
       }}
     />

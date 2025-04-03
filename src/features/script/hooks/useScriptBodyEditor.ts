@@ -1,19 +1,33 @@
 "use client";
+/**
+ * @file useScriptBodyEditor.ts
+ * @description Hook para gestionar la edición del scriptBody completo.
+ *
+ * Funcionalidades:
+ *  - Transforma el script.body (array) en un objeto editable (localBody).
+ *  - Realiza el guardado automático tras cambios (con debounce).
+ *  - Configura el reconocimiento de voz para agregar texto a la sección activa.
+ *
+ * Retorna:
+ *  - localBody: Objeto con las secciones del script.
+ *  - setLocalBody: Función para actualizar el contenido local.
+ *  - isListening, interimText: Estados del reconocimiento de voz.
+ *  - selectedKey, setSelectedKey: La sección activa.
+ */
 
 import { useEffect, useRef, useState } from "react";
-import { useScript } from "@/hooks/useScript";
+import { useScript } from "@/features/script/hooks/useScript";
 import { useTimelineStore } from "@/features/timeline/hooks/useTimelineStore";
 
-export default function ScriptBody() {
+export function useScriptBodyEditor() {
   const { script, updateScript } = useScript();
   const { selectedKey, setSelectedKey } = useTimelineStore();
-
   const [localBody, setLocalBody] = useState<Record<string, string>>({});
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState("");
 
-  // 🧠 Transformar array a objeto local editable
+  // Convertir el script.body (array) a objeto editable
   useEffect(() => {
     if (!script?.body) return;
     const transformed = script.body.reduce((acc, part) => {
@@ -24,19 +38,17 @@ export default function ScriptBody() {
     setLocalBody(transformed);
   }, [script?.body]);
 
-  // 💾 Guardado automático
+  // Auto-guardado: Cada 600ms se actualiza la DB con el contenido actual
   useEffect(() => {
     if (!selectedKey || !script?.body || !updateScript) return;
-
     const handler = setTimeout(() => {
       const newBody = Object.entries(localBody).map(([k, v]) => ({ [k]: v }));
       updateScript({ body: newBody });
     }, 600);
-
     return () => clearTimeout(handler);
   }, [localBody, selectedKey, script?.body, updateScript]);
 
-  // 🎙️ Configuración de reconocimiento de voz
+  // Configurar reconocimiento de voz
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -50,7 +62,6 @@ export default function ScriptBody() {
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let final = "";
       let interim = "";
-
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
@@ -59,21 +70,19 @@ export default function ScriptBody() {
           interim += transcript;
         }
       }
-
       if (final) {
         setLocalBody((prev) => ({
           ...prev,
           [selectedKey]: (prev[selectedKey] || "") + final,
         }));
       }
-
       setInterimText(interim);
     };
 
     recognitionRef.current = recognition;
   }, [selectedKey]);
 
-  // 👂 Eventos de teclado global
+  // Eventos globales para manejar el inicio/fin del reconocimiento
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.key === "Enter") {
@@ -94,57 +103,18 @@ export default function ScriptBody() {
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [isListening]);
 
-  if (!selectedKey) return null;
-
-  return (
-    <div className="mt-10 text-white">
-      <div className="relative p-6 border border-neutral-800 bg-neutral-900 rounded-lg">
-        {Object.entries(localBody).map(([key, value]) => (
-          <div key={key} className="relative mb-6 group">
-            <button
-              onClick={() => setSelectedKey(key)}
-              className={`absolute -left-24 top-1/2 transform -translate-y-1/2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest
-                ${
-                  key === selectedKey
-                    ? "bg-pink-600 text-white"
-                    : "bg-neutral-800 text-neutral-500 opacity-50"
-                }`}
-            >
-              {key}
-            </button>
-            <textarea
-              value={
-                key === selectedKey
-                  ? value +
-                    (isListening && interimText ? " " + interimText : "")
-                  : value
-              }
-              onChange={(e) =>
-                setLocalBody((prev) => ({ ...prev, [key]: e.target.value }))
-              }
-              onFocus={() => setSelectedKey(key)}
-              placeholder={`Escribe el contenido de "${key}"...`}
-              className={`w-full bg-transparent p-1 outline-none resize-none text-base leading-relaxed transition duration-200 ${
-                key !== selectedKey
-                  ? "text-neutral-500 opacity-50"
-                  : "text-white bg-neutral-800 rounded-lg shadow-inner"
-              }`}
-            />
-            {key === selectedKey && isListening && (
-              <div className="absolute right-4 top-3 animate-pulse text-blue-400 text-xs">
-                🎤 Hablando...
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return {
+    localBody,
+    setLocalBody,
+    isListening,
+    interimText,
+    selectedKey,
+    setSelectedKey,
+  };
 }

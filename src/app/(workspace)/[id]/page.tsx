@@ -1,13 +1,10 @@
-import ScriptSection from "@/components/editor/script/ScriptSection";
-import TimelineSection from "@/features/timeline/components/TimelineSection";
-import SketchSection from "@/features/sketch/components/SketchSection";
+import Editor from "@/features/editor/components/Editor";
+import { Suspense } from "react";
 
 export default function EditorPage() {
   return (
-    <>
-      <ScriptSection />
-      <TimelineSection />
-      <SketchSection />
-    </>
+    <Suspense fallback={<div>Cargando editor...</div>}>
+      <Editor />
+    </Suspense>
   );
 }

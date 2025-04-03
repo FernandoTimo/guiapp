@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useCallback } from "react";
 import { useSketchStore } from "./useSketchStore";
-import { useScript } from "@/hooks/useScript";
+import { useScript } from "@/features/script/hooks/useScript";
 import { useSketchPersistence } from "../hooks/useSketchPersistence"; // <-- Nuevo: usamos el hook de persistencia
 
 interface UseSketchCanvasProps {

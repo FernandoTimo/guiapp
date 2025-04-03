@@ -1,16 +1,11 @@
 "use client";
-
 /**
  * @file useMousePosition.ts
- * @description Captura la posición global del mouse, así como si el cursor está
- *   dentro de la ventana (visible) o no. Se utilizan eventos window para detectar
- *   movimiento y salida.
+ * @description Hook para capturar la posición global del mouse y controlar la visibilidad del cursor.
  *
- *   - Retorna un objeto { pos, visible, setPos }
- *   - 'pos' => { x, y }
- *   - 'visible' => boolean
- *   - 'setPos' => te permite actualizar la posición manualmente
- *                 (por ejemplo, para forzar un re-render).
+ * Escucha "mousemove" y "mouseout" en window para actualizar la posición y visibilidad.
+ *
+ * @returns {Object} { pos: { x: number, y: number }, visible: boolean, setPos: Function }
  */
 
 import { useEffect, useState } from "react";

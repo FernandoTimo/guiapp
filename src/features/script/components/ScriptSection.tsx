@@ -1,17 +1,26 @@
 "use client";
+/**
+ * @file ScriptSection.tsx
+ * @description Componente principal para la edición del Script.
+ *
+ * Permite editar el título del guion y renderiza el ScriptBody que contiene
+ * todas las secciones del script.
+ */
 
 import { useState, useEffect } from "react";
-import { useScript } from "@/hooks/useScript";
+import { useScript } from "@/features/script/hooks/useScript";
 import ScriptBody from "./ScriptBody";
 
 export default function ScriptSection() {
   const { script, updateScript } = useScript();
   const [title, setTitle] = useState(script?.title || "");
 
+  // Sincroniza el título con el script cargado
   useEffect(() => {
     setTitle(script?.title || "");
   }, [script?.title]);
 
+  // Auto-guardado del título
   useEffect(() => {
     const handler = setTimeout(() => {
       if (title && script?.title !== title) {
@@ -29,7 +38,6 @@ export default function ScriptSection() {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-
       <ScriptBody />
     </div>
   );

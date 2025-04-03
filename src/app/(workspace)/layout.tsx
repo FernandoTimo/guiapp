@@ -1,5 +1,5 @@
 // app/(workspace)/layout.tsx
-import Sidebar from "@/components/sidebar/Sidebar";
+import Sidebar from "@/features/sidebar/components/Sidebar";
 import React from "react";
 
 export default function WorkspaceLayout({

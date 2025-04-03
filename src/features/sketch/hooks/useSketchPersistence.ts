@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { useScript } from "@/hooks/useScript";
+import { useScript } from "@/features/script/hooks/useScript";
 
 export function useSketchPersistence() {
   const { script } = useScript();

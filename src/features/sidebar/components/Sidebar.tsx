@@ -1,4 +1,13 @@
 "use client";
+/**
+ * @file Sidebar.tsx
+ * @description Componente que muestra la barra lateral de la aplicación.
+ *
+ * Se encarga de:
+ *  - Obtener la lista de scripts desde la DB.
+ *  - Mostrar un botón para crear un nuevo guion.
+ *  - Renderizar los SidebarItem agrupados por fecha.
+ */
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -63,6 +72,12 @@ export default function Sidebar() {
     setScripts((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const handleRenamed = (id: string, newTitle: string) => {
+    setScripts((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, title: newTitle } : s))
+    );
+  };
+
   const grouped = groupScriptsByDate(scripts);
 
   return (
@@ -96,16 +111,8 @@ export default function Sidebar() {
                 key={script.id}
                 id={script.id}
                 title={script.title}
-                onDeleted={(deletedId) =>
-                  setScripts((prev) => prev.filter((s) => s.id !== deletedId))
-                }
-                onRenamed={(renamedId, newTitle) =>
-                  setScripts((prev) =>
-                    prev.map((s) =>
-                      s.id === renamedId ? { ...s, title: newTitle } : s
-                    )
-                  )
-                }
+                onDeleted={handleDeleted}
+                onRenamed={handleRenamed}
               />
             ))}
           </ul>
