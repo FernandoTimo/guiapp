@@ -7,6 +7,7 @@ import { TimelineList } from "./TimelineList";
 import { TimelineCreationForm } from "./TimelineCreationForm";
 import { supabase } from "@/lib/supabase/client";
 import { useScript } from "@/hooks/useScript";
+import { useSketchPersistence } from "@/features/sketch/hooks/useSketchPersistence"; // <-- Importamos el hook de persistencia
 
 export default function TimelineSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,6 +23,8 @@ export default function TimelineSection() {
   const { latestTimelines, fetchTimelines } = useTimeline();
   const { selectedTimeline, setSelectedTimeline, selectedKey, setSelectedKey } =
     useTimelineStore();
+
+  const { updateSketchNotesForTimeline } = useSketchPersistence(); // <-- Extraemos la función
 
   useEffect(() => {
     setMounted(true);
@@ -94,8 +97,11 @@ export default function TimelineSection() {
     setIsCreating(false);
     fetchTimelines();
 
-    if (data?.id && updateScript) {
+    if (data?.id && updateScript && script?.id) {
+      // Actualizamos el timeline_id del script
       updateScript({ timeline_id: data.id });
+      // Actualizamos los Sketches (notas) con la nueva estructura
+      updateSketchNotesForTimeline(structureArray, script.id);
     }
   };
 
@@ -113,9 +119,11 @@ export default function TimelineSection() {
           onSelect={(timeline) => {
             setSelectedTimeline(timeline);
             setSelectedKey(timeline.structure[0] || "");
-            setIsOpen(false); // ✅ Se cierra automáticamente
-            if (script?.id) {
+            setIsOpen(false); // Se cierra automáticamente
+            if (script?.id && updateScript) {
               updateScript({ timeline_id: timeline.id });
+              // Actualizamos los Sketches para reflejar la nueva estructura
+              updateSketchNotesForTimeline(timeline.structure, script.id);
             }
           }}
         />
