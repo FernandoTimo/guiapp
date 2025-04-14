@@ -1,35 +1,35 @@
+// useSketchCarousel.ts
 "use client";
-
-/**
- * @file useSketchCarousel.ts
- * @description Hook que encapsula la lógica de navegación de slides (flechas de teclado),
- *   y sincroniza con el timeline store (selectedKey, selectedTimeline).
- *
- *   - Retorna las slides a mostrar ("GENERAL" + estructura).
- *   - Expone activeIndex, currentTitle, etc.
- *   - Maneja isInternalChange para evitar bucles con selectedKey externo.
- *   - handleKeyDown: lógica de flechas (←, →).
- */
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTimelineStore } from "@/features/timeline/hooks/useTimelineStore";
 
+/**
+ * useSketchCarousel
+ * Hook personalizado que maneja la navegación de slides en el carrusel de Sketch.
+ * Además gestiona el estado de los datos de los lienzos (notesData) y sus actualizaciones.
+ */
 export function useSketchCarousel() {
-  // 1) Integración con timeline store
   const { selectedKey, setSelectedKey, selectedTimeline } = useTimelineStore();
 
-  // 2) Estructura
+  // Estructura base: "GENERAL" + items de la estructura del timeline
   const structure = useMemo(
     () => selectedTimeline?.structure || [],
     [selectedTimeline]
   );
+
   const allSlides = useMemo(() => ["GENERAL", ...structure], [structure]);
 
-  // 3) Estado interno del carrusel
+  // Estado para manejar la navegación
   const [activeIndex, setActiveIndex] = useState(0);
   const [isInternalChange, setIsInternalChange] = useState(false);
 
-  // 4) Lógica de flechas de teclado
+  // Estado local para los datos de los lienzos
+  const [notesData, setNotesData] = useState<Record<string, string>>({});
+
+  /**
+   * Manejador para las flechas de teclado.
+   */
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") {
@@ -43,18 +43,27 @@ export function useSketchCarousel() {
     [allSlides.length]
   );
 
-  // 5) Al cambiar index internamente, actualizamos selectedKey
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  /**
+   * Cuando cambia el activeIndex (por teclado o miniatura), actualizar selectedKey.
+   */
   useEffect(() => {
     if (isInternalChange) {
-      const key = allSlides[activeIndex];
-      if (key && key !== selectedKey) {
-        setSelectedKey(key);
+      const newKey = allSlides[activeIndex];
+      if (newKey && newKey !== selectedKey) {
+        setSelectedKey(newKey);
       }
       setIsInternalChange(false);
     }
   }, [activeIndex, allSlides, selectedKey, setSelectedKey, isInternalChange]);
 
-  // 6) Si cambia selectedKey (desde fuera), sincronizamos activeIndex
+  /**
+   * Cuando cambia selectedKey (desde fuera), actualizar activeIndex.
+   */
   useEffect(() => {
     if (!isInternalChange) {
       const idx = allSlides.findIndex((k) => k === selectedKey);
@@ -64,18 +73,32 @@ export function useSketchCarousel() {
     }
   }, [selectedKey, allSlides, activeIndex, isInternalChange]);
 
-  // 7) currentTitle => "GENERAL" o "ITEM N (clave)"
+  // currentKey activo
+  const currentKey = allSlides[activeIndex];
+
+  // currentTitle para mostrar arriba
   const currentTitle = useMemo(() => {
     if (activeIndex === 0) return "GENERAL";
     const itemKey = structure[activeIndex - 1] || "";
-    return `ITEM ${activeIndex} (${itemKey})`;
+    return `BOSQUEJO ${itemKey}`;
   }, [activeIndex, structure]);
 
-  // Retornamos todo lo necesario para construir el carrusel
+  /**
+   * Función para navegar a un slide manualmente (por click en miniatura)
+   */
+  const goToSlide = (index: number) => {
+    setIsInternalChange(true);
+    setActiveIndex(index);
+  };
+
   return {
     allSlides,
     activeIndex,
+    currentKey,
     currentTitle,
-    handleKeyDown,
+    notesData,
+    setNotesData,
+    goToSlide,
+    setSelectedKey,
   };
 }

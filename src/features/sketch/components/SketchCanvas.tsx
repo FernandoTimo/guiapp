@@ -6,7 +6,7 @@
  * únicamente cuando el mouse está dentro del contenedor.
  */
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSketchCanvas } from "../hooks/useSketchCanvas";
 import SketchCursorPreview from "./SketchCursorPreview";
 import { useSketchStore } from "../hooks/useSketchStore";
@@ -29,13 +29,16 @@ export default function SketchCanvas({
   // Estado para saber si el mouse está dentro del contenedor.
   const [inside, setInside] = useState(false);
 
-  const {
-    canvasRef,
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    handleWheel,
-  } = useSketchCanvas({ noteKey, notesData, setNotesData });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const { setCanvasRef } = useSketchStore();
+
+  useEffect(() => {
+    setCanvasRef(canvasRef); // 👈 guardamos el canvasRef globalmente
+  }, [setCanvasRef]);
+
+  const { handlePointerDown, handlePointerMove, handlePointerUp, handleWheel } =
+    useSketchCanvas({ noteKey, notesData, setNotesData });
 
   const { tool, color, size } = useSketchStore();
 

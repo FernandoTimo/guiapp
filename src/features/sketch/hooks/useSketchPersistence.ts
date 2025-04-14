@@ -141,10 +141,101 @@ export function useSketchPersistence() {
     },
     [scriptId]
   );
+  const saveThumbnail = useCallback(
+    async (noteKey: string, thumbnailDataURL: string) => {
+      if (!scriptId) return;
 
+      // Primero traemos las miniaturas actuales
+      const { data, error } = await supabase
+        .from("scripts")
+        .select("miniaturas")
+        .eq("id", scriptId)
+        .single();
+
+      if (error) {
+        console.error("Error cargando miniaturas:", error);
+        return;
+      }
+
+      let allThumbnails: Record<string, string> = {};
+
+      if (data?.miniaturas) {
+        if (typeof data.miniaturas === "string") {
+          try {
+            allThumbnails = JSON.parse(data.miniaturas);
+            if (Array.isArray(allThumbnails)) {
+              allThumbnails = {}; // Si estaba mal guardado como array
+            }
+          } catch (err) {
+            console.error("Error parseando miniaturas:", err);
+            allThumbnails = {};
+          }
+        } else if (Array.isArray(data.miniaturas)) {
+          allThumbnails = {};
+        } else {
+          allThumbnails = data.miniaturas;
+        }
+      }
+
+      // Actualizamos la miniatura específica
+      allThumbnails[noteKey] = thumbnailDataURL;
+
+      // Ahora guardamos de vuelta
+      const { error: updateError } = await supabase
+        .from("scripts")
+        .update({ miniaturas: allThumbnails })
+        .eq("id", scriptId);
+
+      if (updateError) {
+        console.error("Error actualizando miniaturas:", updateError);
+      } else {
+        console.log(`Miniatura guardada para ${noteKey}`);
+      }
+    },
+    [scriptId]
+  );
+  const clearSketch = async (noteKey: string) => {
+    if (!scriptId) return;
+    const { data, error } = await supabase
+      .from("scripts")
+      .select("notas")
+      .eq("id", scriptId)
+      .single();
+
+    if (error || !data) {
+      console.error("Error obteniendo notas:", error);
+      return;
+    }
+
+    let allNotes: Record<string, string> = {};
+
+    try {
+      if (typeof data.notas === "string") {
+        allNotes = JSON.parse(data.notas);
+      } else {
+        allNotes = data.notas || {};
+      }
+    } catch (err) {
+      console.error("Error parseando notas:", err);
+      return;
+    }
+
+    delete allNotes[noteKey]; // 👈 Elimina la nota específica
+
+    const { error: updateError } = await supabase
+      .from("scripts")
+      .update({ notas: allNotes })
+      .eq("id", scriptId);
+
+    if (updateError) {
+      console.error("Error actualizando notas:", updateError);
+    }
+  };
   return {
+    saveThumbnail,
     loadSketch,
     saveSketch,
-    updateSketchNotesForTimeline, // <-- Retornamos la nueva función
+    updateSketchNotesForTimeline,
+    clearSketch, // <-- Retornamos la nueva función
   };
 }

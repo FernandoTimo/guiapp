@@ -24,6 +24,7 @@ export interface Script {
   timeline_id: string;
   notas?: string | null; // Almacena un objeto JSON con las notas o Sketches.
   created_at?: string;
+  miniaturas?: Record<string, string>;
 }
 
 /**

@@ -3,6 +3,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useSketchStore } from "./useSketchStore";
 import { useScript } from "@/features/script/hooks/useScript";
 import { useSketchPersistence } from "../hooks/useSketchPersistence"; // <-- Nuevo: usamos el hook de persistencia
+import { generateThumbnail } from "../utils/generateThumbnail";
 
 interface UseSketchCanvasProps {
   noteKey: string;
@@ -20,7 +21,7 @@ export function useSketchCanvas({
 
   const { script } = useScript();
   const { color, size, tool, setColor, setSize } = useSketchStore();
-  const { loadSketch, saveSketch } = useSketchPersistence(); // <-- Extraemos funciones de persistencia
+  const { loadSketch, saveSketch, saveThumbnail } = useSketchPersistence(); // <-- Extraemos funciones de persistencia
 
   // Cargar la imagen desde DB para el noteKey si aún no está en estado local
   useEffect(() => {
@@ -154,9 +155,11 @@ export function useSketchCanvas({
       // Guarda en la DB usando la función de persistencia (guardado en tiempo real)
       if (script?.id) {
         await saveSketch(noteKey, dataURL);
+        const thumbnailDataURL = await generateThumbnail(dataURL);
+        await saveThumbnail(noteKey, thumbnailDataURL);
       }
     },
-    [noteKey, script?.id, setNotesData, saveSketch]
+    [noteKey, script?.id, setNotesData, saveSketch, saveThumbnail]
   );
 
   // Manejador de rueda: cambia el tamaño del pincel

@@ -14,8 +14,13 @@ import { useTimelineStore } from "../hooks/useTimelineStore";
 import { useTimeline } from "../hooks/useTimeline";
 import { TimelineList } from "./TimelineList";
 import { TimelineCreationForm } from "./TimelineCreationForm";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useSwipeUpInComponent } from "@/hooks/useSwipeUpInComponent";
+import { useSwipeDownInComponent } from "@/hooks/useSwipeDownInComponent";
 
 export default function TimelineSection() {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
   // Refs y estados locales
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -106,20 +111,35 @@ export default function TimelineSection() {
     setNewUsages("");
     setIsCreating(false);
   };
-
+  const { handleTouchStart, handleTouchMove, handleTouchEnd } =
+    useSwipeUpInComponent(() => {
+      setIsOpen(true);
+    });
+  const { handleTouchStartDown, handleTouchMoveDown, handleTouchEndDown } =
+    useSwipeDownInComponent(() => {
+      setIsOpen(false);
+    });
   if (!mounted) return null;
-
   return (
     <section
       ref={containerRef}
-      className="flex fixed flex-row bottom-5 left-1/2 transform -translate-x-1/2 w-[50%] text-white items-end gap-2 pointer-events-none"
+      className="flex fixed justify-center flex-row bottom-5 left-1/2 transform -translate-x-1/2 w-[50%] text-white items-end gap-2 pointer-events-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
+      {/* <div
+        className="flex absolute h-5 w-8 justify-center items-center bg-neutral-900 bottom-12 left-1/2  transform -translate-x-1/2  z-50 cursor-pointer pointer-events-auto"
+        onClick={() => setIsOpen((prev) => !prev)}
+      >
+        {isOpen ? "⬇️" : "⬆️"}
+      </div> */}
       {/* Bloque principal */}
-      <div className="flex items-center flex-col flex-1 gap-5 max-h-[50vh]">
+      <div className="flex justify-center items-center flex-col flex-1 gap-5">
         <TimelineList
           timelines={latestTimelines}
           isOpen={isOpen}
-          onSelect={(timeline) => {
+          onSelectOne={(timeline) => {
             setSelectedTimeline(timeline);
             setSelectedKey(timeline.structure[0] || "");
             setIsOpen(false); // Cierra la lista
@@ -127,10 +147,13 @@ export default function TimelineSection() {
               updateScript({ timeline_id: timeline.id });
             }
           }}
+          onTouchStart={handleTouchStartDown}
+          onTouchMove={handleTouchMoveDown}
+          onTouchEnd={handleTouchEndDown}
         />
 
         {selectedTimeline && (
-          <div className="p-2 flex-1 w-full bg-neutral-900 rounded-3xl pointer-events-auto">
+          <div className="p-2 flex-1 w-80 bg-neutral-900 rounded-3xl pointer-events-auto">
             <div className="flex flex-col gap-2 w-full">
               {!isCreating ? (
                 // Renderizamos la estructura del timeline seleccionado
@@ -166,42 +189,45 @@ export default function TimelineSection() {
       </div>
 
       {/* Botones inferiores (cambiar/crear timeline) */}
-      <div className="flex h-10 w-60 mb-2 gap-2">
-        {isCreating ? (
-          <>
-            <button
-              className="flex-1 border-2 border-green-600 rounded-2xl text-sm text-green-600 pointer-events-auto"
-              onClick={handleSaveNewTimeline}
-            >
-              Guardar
-            </button>
-            <button
-              className="flex-1 border-2 border-red-800 rounded-2xl text-sm text-red-500 pointer-events-auto"
-              onClick={() => setIsCreating(false)}
-            >
-              Cancelar
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              className="flex-1 border-2 border-amber-900 rounded-2xl text-sm text-amber-500 pointer-events-auto"
-              onClick={() => setIsOpen((prev) => !prev)}
-            >
-              {isOpen ? "Ocultar" : "Cambiar"}
-            </button>
-            <button
-              className="flex-1 border-2 border-blue-600 rounded-2xl text-sm text-blue-600 pointer-events-auto"
-              onClick={() => {
-                setIsCreating(true);
-                setIsOpen(false);
-              }}
-            >
-              Crear nuevo
-            </button>
-          </>
-        )}
-      </div>
+      {!isMobile && (
+        <div className="flex h-10 w-60 mb-2 gap-2">
+          {isCreating ? (
+            <>
+              <button
+                className="flex-1 border-2 border-green-600 rounded-2xl text-sm text-green-600 pointer-events-auto"
+                onClick={handleSaveNewTimeline}
+              >
+                Guardar
+              </button>
+              <button
+                className="flex-1 border-2 border-red-800 rounded-2xl text-sm text-red-500 pointer-events-auto"
+                onClick={() => setIsCreating(false)}
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="flex-1 border-2 border-amber-900 rounded-2xl text-sm text-amber-500 pointer-events-auto"
+                onClick={() => setIsOpen((prev) => !prev)}
+              >
+                {isOpen ? "Ocultar" : "Cambiar"}
+              </button>
+
+              <button
+                className="flex-1 border-2 border-blue-600 rounded-2xl text-sm text-blue-600 pointer-events-auto"
+                onClick={() => {
+                  setIsCreating(true);
+                  setIsOpen(false);
+                }}
+              >
+                Crear nuevo
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </section>
   );
 }

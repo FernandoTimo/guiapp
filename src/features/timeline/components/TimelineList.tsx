@@ -6,23 +6,24 @@
  *
  * @remarks
  *   - Usa AnimatePresence (framer-motion) para animar la aparición/desaparición.
- *   - Recibe `timelines`, `isOpen` y un callback `onSelect`.
+ *   - Recibe `timelines`, `isOpen` y un callback `onSelectOne`.
  */
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timeline } from "../types/timelineTypes";
 
-interface TimelineListProps {
+interface TimelineListProps extends React.HTMLAttributes<HTMLDivElement> {
   timelines: Timeline[];
   isOpen: boolean;
-  onSelect: (timeline: Timeline) => void;
+  onSelectOne: (timeline: Timeline) => void;
 }
 
 export function TimelineList({
   timelines,
   isOpen,
-  onSelect,
+  onSelectOne,
+  ...props
 }: TimelineListProps) {
   return (
     <AnimatePresence>
@@ -32,7 +33,8 @@ export function TimelineList({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="flex flex-col gap-2 w-[90%] bg-neutral-900 p-4 rounded-2xl pointer-events-auto"
+          className="flex flex-col gap-2 w-[280] bg-neutral-900 p-4 rounded-2xl pointer-events-auto"
+          {...props}
         >
           {timelines.map((timeline) => (
             <motion.div
@@ -40,7 +42,7 @@ export function TimelineList({
               className="p-4 border-2 border-neutral-800 rounded-2xl cursor-pointer"
               whileHover={{ backgroundColor: "#222" }}
               transition={{ duration: 0.3 }}
-              onClick={() => onSelect(timeline)}
+              onClick={() => onSelectOne(timeline)}
             >
               <div className="flex flex-wrap gap-2 w-full">
                 {timeline.structure.map((item, index) => (

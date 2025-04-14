@@ -12,21 +12,30 @@
 
 import React from "react";
 import { useSketchStore } from "../hooks/useSketchStore";
+import { useSketchPersistence } from "../hooks/useSketchPersistence";
+import { useScript } from "@/features/script/hooks/useScript";
+import { useTimelineStore } from "@/features/timeline/hooks/useTimelineStore";
 
 export default function SketchToolbar() {
   const { clearStrokes } = useSketchStore();
 
-  /**
-   * handleClearCanvas:
-   *   - Borra todos los trazos almacenados en el estado (useSketchStore).
-   *   - Puede ampliarse para llamar a un servicio que también limpie
-   *     la base de datos, cuando tengamos persistencia.
-   */
-  const handleClearCanvas = () => {
-    clearStrokes();
-    // En el futuro, aquí se podría notificar al backend o sincronizar con supabase.
-  };
+  const { clearSketch } = useSketchPersistence(); // 👈 vamos a crear esta función ahorita
+  const { script } = useScript();
+  const { selectedKey } = useTimelineStore();
 
+  const handleClearCanvas = async () => {
+    clearStrokes();
+    if (script?.id && selectedKey) {
+      await clearSketch(selectedKey); // ✅ limpia también Supabase para ese slide
+    }
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // 👈 Borra el canvas visualmente también
+      }
+    }
+  };
   return (
     <div className="absolute bottom-2 right-2 p-2 flex items-center gap-2 bg-black/30 rounded-full">
       <button
